@@ -49,6 +49,10 @@ class Settings(BaseSettings):
     )
 
     # Data Source API Keys
+    ALPHAEARTH_API_KEY: Optional[str] = Field(
+        default=None,
+        description="AlphaEarth API key for satellite, soil, water, and climate data"
+    )
     NASA_API_KEY: Optional[str] = Field(
         default=None,
         description="NASA EarthData API key"

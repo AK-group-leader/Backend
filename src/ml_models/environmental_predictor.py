@@ -11,6 +11,7 @@ from datetime import datetime
 from .heat_island_predictor import HeatIslandPredictor
 from .water_absorption_predictor import WaterAbsorptionPredictor
 from .air_quality_predictor import AirQualityPredictor
+from src.databricks_integration.delta_lake import delta_lake_manager
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class EnvironmentalPredictor:
         time_horizon: int = 10
     ) -> Dict[str, Any]:
         """
-        Perform comprehensive environmental analysis
+        Perform comprehensive environmental analysis using AlphaEarth data
 
         Args:
             coordinates: Analysis area coordinates
@@ -43,20 +44,26 @@ class EnvironmentalPredictor:
             logger.info(
                 f"Starting comprehensive analysis for area: {coordinates}")
 
-            # Run individual analyses
+            # Get AlphaEarth data from Delta Lake
+            alphaearth_data = await self._get_alphaearth_data(coordinates)
+
+            # Run individual analyses with real data
             heat_island_results = await self.heat_island_predictor.analyze_heat_island_effect(
                 coordinates=coordinates,
-                time_horizon=time_horizon
+                time_horizon=time_horizon,
+                alphaearth_data=alphaearth_data
             )
 
             water_absorption_results = await self.water_absorption_predictor.analyze_water_absorption(
                 coordinates=coordinates,
-                time_horizon=time_horizon
+                time_horizon=time_horizon,
+                alphaearth_data=alphaearth_data
             )
 
             air_quality_results = await self.air_quality_predictor.analyze_air_quality_impact(
                 coordinates=coordinates,
-                time_horizon=time_horizon
+                time_horizon=time_horizon,
+                alphaearth_data=alphaearth_data
             )
 
             # Combine results
@@ -233,6 +240,42 @@ class EnvironmentalPredictor:
         except Exception as e:
             logger.error(f"Recommendation generation failed: {str(e)}")
             raise
+
+    async def _get_alphaearth_data(self, coordinates: List[List[float]]) -> Dict[str, Any]:
+        """
+        Get AlphaEarth data from Delta Lake for analysis
+
+        Args:
+            coordinates: Analysis area coordinates
+
+        Returns:
+            Dictionary containing AlphaEarth data
+        """
+        try:
+            alphaearth_data = {}
+
+            # Get different types of processed data
+            data_types = ["satellite_processed",
+                          "soil_processed", "climate_processed"]
+
+            for data_type in data_types:
+                try:
+                    data = await delta_lake_manager.get_processed_data(
+                        data_type=data_type,
+                        coordinates=coordinates
+                    )
+                    if data:
+                        # Get most recent record
+                        alphaearth_data[data_type] = data[0]
+                except Exception as e:
+                    logger.warning(f"Could not retrieve {data_type}: {str(e)}")
+                    continue
+
+            return alphaearth_data
+
+        except Exception as e:
+            logger.error(f"Failed to get AlphaEarth data: {str(e)}")
+            return {}
 
     def _calculate_overall_risk_score(
         self,

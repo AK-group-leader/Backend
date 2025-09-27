@@ -7,10 +7,12 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import logging
 
+from src.data_ingestion.alphaearth_ingestion import AlphaEarthDataIngestion
 from src.data_ingestion.nasa_ingestion import NASADataIngestion
 from src.data_ingestion.sentinel_ingestion import SentinelDataIngestion
 from src.data_ingestion.noaa_ingestion import NOAADataIngestion
 from src.data_ingestion.osm_ingestion import OSMDataIngestion
+from src.databricks_integration.delta_lake import delta_lake_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -21,7 +23,7 @@ class DataIngestionRequest(BaseModel):
     data_source: str = Field(
         ...,
         description="Data source to ingest from",
-        enum=["nasa", "sentinel", "noaa", "osm", "all"]
+        enum=["alphaearth", "nasa", "sentinel", "noaa", "osm", "all"]
     )
     coordinates: List[List[float]] = Field(
         ...,
@@ -60,7 +62,41 @@ async def ingest_data(
     try:
         ingestion_id = f"ingestion_{hash(str(request.coordinates))}"
 
-        if request.data_source == "nasa":
+        if request.data_source == "alphaearth":
+            ingester = AlphaEarthDataIngestion()
+            result = await ingester.ingest_data(
+                coordinates=request.coordinates,
+                date_range=request.date_range,
+                data_types=request.data_types
+            )
+
+            # Process and store data in Delta Lake
+            if result.get("alphaearth_data"):
+                for data_type, data in result["alphaearth_data"].items():
+                    try:
+                        if data_type == "satellite":
+                            processed_data = await delta_lake_manager.process_satellite_data(
+                                data, request.coordinates
+                            )
+                        elif data_type == "soil":
+                            processed_data = await delta_lake_manager.process_soil_data(
+                                data, request.coordinates
+                            )
+                        elif data_type == "climate":
+                            processed_data = await delta_lake_manager.process_climate_data(
+                                data, request.coordinates
+                            )
+                        else:
+                            # Store raw data for other types
+                            await delta_lake_manager.store_alphaearth_data(
+                                data_type, data, request.coordinates
+                            )
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to process {data_type} data: {str(e)}")
+                        continue
+
+        elif request.data_source == "nasa":
             ingester = NASADataIngestion()
             result = await ingester.ingest_data(
                 coordinates=request.coordinates,
@@ -138,11 +174,13 @@ async def ingest_from_all_sources(
         "sources": {}
     }
 
-    sources = ["nasa", "sentinel", "noaa", "osm"]
+    sources = ["alphaearth", "nasa", "sentinel", "noaa", "osm"]
 
     for source in sources:
         try:
-            if source == "nasa":
+            if source == "alphaearth":
+                ingester = AlphaEarthDataIngestion()
+            elif source == "nasa":
                 ingester = NASADataIngestion()
             elif source == "sentinel":
                 ingester = SentinelDataIngestion()
@@ -175,6 +213,14 @@ async def get_available_data_sources():
     """
     return {
         "sources": [
+            {
+                "name": "alphaearth",
+                "description": "AlphaEarth - Comprehensive environmental data platform with satellite, soil, water, and climate data",
+                "data_types": ["satellite", "soil", "water", "climate", "vegetation", "elevation", "land_cover", "urban_heat", "air_quality", "carbon_sequestration"],
+                "update_frequency": "real-time",
+                "coverage": "global",
+                "features": ["High-resolution satellite imagery", "Real-time climate data", "Soil composition analysis", "Water quality monitoring", "Vegetation health indices", "Urban heat island detection", "Air quality measurements", "Carbon sequestration analysis"]
+            },
             {
                 "name": "nasa",
                 "description": "NASA EarthData - Satellite imagery and environmental data",

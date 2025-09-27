@@ -4,12 +4,31 @@ A comprehensive platform for analyzing environmental impact of urban development
 
 ## 🌍 Overview
 
-Developing cities often face rising temperatures due to the "urban heat island effect," caused by too many concrete buildings and loss of vegetation. Our solution is a web platform that uses satellite imagery, soil and water data, and AI models to predict the environmental impact of new construction.
+Developing cities often face rising temperatures due to the **Urban Heat Island (UHI) effect** - areas within cities that experience higher temperatures than their surrounding rural regions due to human activities and urban infrastructure.
+
+### 🔥 **Urban Heat Island Challenge**
+
+Urban Heat Islands are caused by:
+
+- **Heat-absorbing materials** like concrete and asphalt that store heat during the day and release it slowly at night
+- **Lack of vegetation** that would provide cooling through evapotranspiration
+- **Anthropogenic heat** from vehicles, buildings, and industrial activities
+- **Reduced air circulation** due to urban canyon effects
+
+### 📊 **UHI Impacts We Address**
+
+- **Energy Consumption**: Increased cooling demand leading to higher electricity costs
+- **Air Quality**: Higher temperatures worsen air pollution and ozone formation
+- **Public Health**: Heat-related illnesses, especially affecting vulnerable populations
+- **Economic Burden**: Significant costs to communities and healthcare systems
+
+Our solution is a web platform that uses satellite imagery, soil and water data, and AI models to predict the environmental impact of new construction and provide actionable mitigation strategies.
 
 ## ✨ Features
 
 ### 🔬 Environmental Impact Analysis
 
+- **Urban Heat Island Analysis**: Comprehensive UHI impact assessment including energy consumption, air quality, and public health
 - **Heat Island Effect Prediction**: Predict temperature rise and heat absorption risks
 - **Water Absorption Analysis**: Analyze flood risk and drainage efficiency
 - **Air Quality Impact Assessment**: Predict air quality changes and pollutant concentrations
@@ -17,6 +36,7 @@ Developing cities often face rising temperatures due to the "urban heat island e
 
 ### 📊 Data Integration
 
+- **AlphaEarth**: Primary data source for satellite, soil, water, and climate data
 - **NASA EarthData**: Satellite imagery and environmental data
 - **Sentinel Hub**: European Space Agency satellite data
 - **NOAA**: Weather and climate data
@@ -38,6 +58,7 @@ Developing cities often face rising temperatures due to the "urban heat island e
 
 ### 🌱 Sustainability Recommendations
 
+- **UHI Mitigation Strategies**: Green roofs, urban forests, cool pavements, and water features
 - **Eco-friendly Alternatives**: Suggest green rooftops, tree cover, and water bodies
 - **Mitigation Strategies**: Reduce heat and improve sustainability
 - **Cost-Benefit Analysis**: Implementation costs and environmental benefits
@@ -60,6 +81,7 @@ Developing cities often face rising temperatures due to the "urban heat island e
 
 ### Data Sources
 
+- **AlphaEarth**: Comprehensive environmental data platform with real-time satellite, soil, water, and climate data
 - **NASA EarthData**: Landsat, MODIS, Sentinel-2 data
 - **Sentinel Hub**: High-resolution satellite imagery
 - **NOAA**: Weather and climate datasets
@@ -74,6 +96,7 @@ Developing cities often face rising temperatures due to the "urban heat island e
 3. **Redis** (for caching)
 4. **Databricks Account** (for ML processing)
 5. **API Keys** for data sources:
+   - AlphaEarth API key (primary data source)
    - NASA EarthData API key
    - Sentinel Hub API key
    - NOAA API key (optional)
@@ -121,6 +144,7 @@ DATABRICKS_TOKEN=your-databricks-token
 DATABRICKS_CLUSTER_ID=your-cluster-id
 
 # API Keys
+ALPHAEARTH_API_KEY=your-alphaearth-api-key
 NASA_API_KEY=your-nasa-api-key
 SENTINEL_API_KEY=your-sentinel-api-key
 NOAA_API_KEY=your-noaa-api-key
@@ -180,22 +204,38 @@ The API will be available at `http://localhost:8000`
 - `POST /api/v1/visualization/time-series` - Generate time series charts
 - `POST /api/v1/visualization/3d-model` - Generate 3D models
 
+#### AlphaEarth Integration
+
+- `POST /api/v1/alphaearth/data/ingest` - Ingest data from AlphaEarth API
+- `POST /api/v1/alphaearth/heatmap` - Generate heatmaps using AlphaEarth data
+- `POST /api/v1/alphaearth/sustainability-score` - Calculate sustainability scores
+- `GET /api/v1/alphaearth/data/status` - Get AlphaEarth data status
+
+#### Urban Heat Island Analysis
+
+- `POST /api/v1/uhi/comprehensive-analysis` - Comprehensive UHI analysis including energy, air quality, and health impacts
+- `POST /api/v1/uhi/mitigation-analysis` - Analyze UHI mitigation strategies and their effectiveness
+- `POST /api/v1/uhi/scenario-comparison` - Compare UHI impacts between baseline and proposed scenarios
+- `GET /api/v1/uhi/mitigation-strategies` - Get available UHI mitigation strategies
+- `GET /api/v1/uhi/uhi-impacts/{analysis_id}` - Get detailed UHI impact breakdown
+
 ## 🔧 Configuration
 
 ### Environment Variables
 
-| Variable           | Description               | Default   |
-| ------------------ | ------------------------- | --------- |
-| `HOST`             | API host                  | `0.0.0.0` |
-| `PORT`             | API port                  | `8000`    |
-| `DEBUG`            | Debug mode                | `False`   |
-| `DATABASE_URL`     | Database connection URL   | Required  |
-| `REDIS_URL`        | Redis connection URL      | Required  |
-| `DATABRICKS_HOST`  | Databricks workspace host | Optional  |
-| `DATABRICKS_TOKEN` | Databricks access token   | Optional  |
-| `NASA_API_KEY`     | NASA EarthData API key    | Optional  |
-| `SENTINEL_API_KEY` | Sentinel Hub API key      | Optional  |
-| `NOAA_API_KEY`     | NOAA API key              | Optional  |
+| Variable             | Description               | Default   |
+| -------------------- | ------------------------- | --------- |
+| `HOST`               | API host                  | `0.0.0.0` |
+| `PORT`               | API port                  | `8000`    |
+| `DEBUG`              | Debug mode                | `False`   |
+| `DATABASE_URL`       | Database connection URL   | Required  |
+| `REDIS_URL`          | Redis connection URL      | Required  |
+| `DATABRICKS_HOST`    | Databricks workspace host | Optional  |
+| `DATABRICKS_TOKEN`   | Databricks access token   | Optional  |
+| `ALPHAEARTH_API_KEY` | AlphaEarth API key        | Required  |
+| `NASA_API_KEY`       | NASA EarthData API key    | Optional  |
+| `SENTINEL_API_KEY`   | Sentinel Hub API key      | Optional  |
+| `NOAA_API_KEY`       | NOAA API key              | Optional  |
 
 ### Data Storage
 
@@ -267,6 +307,68 @@ response = requests.post("http://localhost:8000/api/v1/visualization/heatmap", j
 
 heatmap_data = response.json()
 print(f"Heatmap generated: {heatmap_data['heatmap_id']}")
+```
+
+### 4. AlphaEarth Integration
+
+```python
+# Ingest data from AlphaEarth
+response = requests.post("http://localhost:8000/api/v1/alphaearth/data/ingest", json={
+    "coordinates": [[-74.0059, 40.7128], [-74.0059, 40.7589], [-73.9352, 40.7589], [-73.9352, 40.7128]],
+    "data_types": ["satellite", "soil", "water", "climate"],
+    "resolution": "high"
+})
+
+ingestion_result = response.json()
+print(f"AlphaEarth data ingested: {ingestion_result['records_ingested']} records")
+
+# Generate heatmap using AlphaEarth data
+response = requests.post("http://localhost:8000/api/v1/alphaearth/heatmap", json={
+    "coordinates": [[-74.0059, 40.7128], [-74.0059, 40.7589], [-73.9352, 40.7589], [-73.9352, 40.7128]],
+    "data_type": "temperature",
+    "resolution": 100
+})
+
+heatmap_data = response.json()
+print(f"AlphaEarth heatmap generated: {heatmap_data['heatmap_id']}")
+
+# Calculate sustainability score
+response = requests.post("http://localhost:8000/api/v1/alphaearth/sustainability-score", json={
+    "coordinates": [[-74.0059, 40.7128], [-74.0059, 40.7589], [-73.9352, 40.7589], [-73.9352, 40.7128]],
+    "include_recommendations": True
+})
+
+sustainability_result = response.json()
+print(f"Sustainability score: {sustainability_result['sustainability_score']['overall_score']}")
+print(f"Grade: {sustainability_result['sustainability_score']['grade']}")
+```
+
+### 5. Urban Heat Island Analysis
+
+```python
+# Comprehensive UHI analysis
+response = requests.post("http://localhost:8000/api/v1/uhi/comprehensive-analysis", json={
+    "coordinates": [[-74.0059, 40.7128], [-74.0059, 40.7589], [-73.9352, 40.7589], [-73.9352, 40.7128]],
+    "time_horizon": 10,
+    "include_mitigation": True,
+    "include_economic_impact": True
+})
+
+uhi_analysis = response.json()
+print(f"UHI intensity: {uhi_analysis['results']['uhi_intensity']['temperature_difference']}°C")
+print(f"Energy impact: {uhi_analysis['results']['energy_consumption_impact']['additional_energy_cost_usd']} USD")
+print(f"Health impact: {uhi_analysis['results']['public_health_impact']['heat_related_health_impacts']['total_healthcare_cost_usd']} USD")
+
+# UHI mitigation analysis
+response = requests.post("http://localhost:8000/api/v1/uhi/mitigation-analysis", json={
+    "coordinates": [[-74.0059, 40.7128], [-74.0059, 40.7589], [-73.9352, 40.7589], [-73.9352, 40.7128]],
+    "mitigation_strategies": ["green_roofs", "urban_forests", "cool_pavements"],
+    "priority_focus": "energy_savings"
+})
+
+mitigation_analysis = response.json()
+print(f"Temperature reduction potential: {mitigation_analysis['mitigation_analysis']['achievable_temperature_reduction']}°C")
+print(f"Payback period: {mitigation_analysis['mitigation_analysis']['cost_analysis']['payback_period_years']} years")
 ```
 
 ## 🌱 Sustainability Impact

@@ -11,7 +11,7 @@ import uvicorn
 import logging
 from pathlib import Path
 
-from src.api.routes import analysis, data_ingestion, predictions, visualization
+from src.api.routes import analysis, data_ingestion, predictions, visualization, alphaearth, uhi_analysis
 from src.utils.config import get_settings
 from src.utils.database import init_database
 from src.utils.logging_config import setup_logging
@@ -81,6 +81,10 @@ app.include_router(predictions.router,
                    prefix="/api/v1/predictions", tags=["Predictions"])
 app.include_router(visualization.router,
                    prefix="/api/v1/visualization", tags=["Visualization"])
+app.include_router(alphaearth.router,
+                   prefix="/api/v1/alphaearth", tags=["AlphaEarth"])
+app.include_router(uhi_analysis.router,
+                   prefix="/api/v1/uhi", tags=["Urban Heat Island Analysis"])
 
 
 @app.get("/")
@@ -95,6 +99,8 @@ async def root():
             "data_ingestion": "/api/v1/data",
             "predictions": "/api/v1/predictions",
             "visualization": "/api/v1/visualization",
+            "alphaearth": "/api/v1/alphaearth",
+            "uhi_analysis": "/api/v1/uhi",
             "docs": "/docs",
             "redoc": "/redoc"
         }
