@@ -12,13 +12,15 @@ from spotify_downloader import download_single_track, download_playlist_tracks
 from dotenv import load_dotenv
 import os
 import logging
+from pathlib import Path
 
 # Load environment variables
 load_dotenv()
 
 SPOTIPY_CLIENT_ID = os.getenv("SPOTIPY_CLIENT_ID")
 SPOTIPY_CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET")
-SPOTIPY_REDIRECT_URI = os.getenv("SPOTIPY_REDIRECT_URI", "http://localhost:8000/callback")
+SPOTIPY_REDIRECT_URI = os.getenv(
+    "SPOTIPY_REDIRECT_URI", "http://localhost:8000/callback")
 
 if not SPOTIPY_CLIENT_ID or not SPOTIPY_CLIENT_SECRET:
     print("ERROR: Missing Spotify API credentials!")
@@ -39,7 +41,8 @@ app = FastAPI(title="Spotify Playlist App")
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://*.vercel.app"],  # Added Vercel support
+    allow_origins=["http://localhost:3000",
+                   "https://*.vercel.app"],  # Added Vercel support
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -55,12 +58,15 @@ sp_oauth = SpotifyOAuth(
     cache_path=None
 )
 
+
 def get_token_from_header(request: Request) -> str:
     """Extract token from Authorization header"""
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="No valid authorization header")
+        raise HTTPException(
+            status_code=401, detail="No valid authorization header")
     return auth_header.split(" ")[1]
+
 
 def warn_frontend(message: str, *, code: str = "DOWNLOAD_FAILED", entity: str = "item", entity_id: str = "", extra: dict | None = None) -> dict:
     """Create and log a structured warning payload for the frontend.
@@ -76,8 +82,10 @@ def warn_frontend(message: str, *, code: str = "DOWNLOAD_FAILED", entity: str = 
             "extra": extra or {}
         }
     }
-    logger.warning(f"{code}: {message} | entity={entity} id={entity_id} extra={extra}")
+    logger.warning(
+        f"{code}: {message} | entity={entity} id={entity_id} extra={extra}")
     return payload
+
 
 @app.get("/")
 def root():
@@ -88,6 +96,7 @@ def root():
             "login": "/login",
             "playlists": "/playlists",
             "playlist": "/playlist/{id}",
+            "downloads": "/downloads",
             "download_track_get": "GET /download/track/{track_id}",
             "download_track_post": "POST /download/track/{track_id}",
             "download_playlist_get": "GET /download/playlist/{playlist_id}",
@@ -95,6 +104,7 @@ def root():
             "download_playlist_stream": "POST /download/playlist/{playlist_id}/stream"
         }
     }
+
 
 @app.get("/login")
 def login(request: Request):
@@ -106,33 +116,136 @@ def login(request: Request):
 
     return RedirectResponse(url=auth_url)
 
+
 @app.get("/callback")
 def callback(code: str = None):
     """Handle Spotify OAuth callback"""
     if not code:
-        raise HTTPException(status_code=400, detail="No authorization code provided")
-    
+        raise HTTPException(
+            status_code=400, detail="No authorization code provided")
+
     try:
         token_info = sp_oauth.get_access_token(code, check_cache=False)
         access_token = token_info["access_token"]
         print(f"Obtained access token: {access_token}")
-        
+
         # Redirect to frontend with token
         return RedirectResponse(f"http://localhost:3000?access_token={access_token}")
-    
+
     except Exception as e:
         logger.error(f"OAuth error: {e}")
         raise HTTPException(status_code=500, detail="Authentication failed")
+
+
+@app.get("/downloads")
+def get_downloaded_songs():
+    """Get list of downloaded songs"""
+    try:
+        downloads_dir = Path("downloads")
+        if not downloads_dir.exists():
+            return {"songs": []}
+
+        # Get all MP3 files in the downloads directory
+        mp3_files = list(downloads_dir.glob("*.mp3"))
+
+        songs = []
+        for file_path in mp3_files:
+            # Get file stats
+            stat = file_path.stat()
+            file_size = stat.st_size
+
+            # Parse filename to extract song name and artist
+            filename = file_path.stem  # Remove .mp3 extension
+            # Format: "Song Name - Artist1, Artist2"
+            if " - " in filename:
+                song_name, artists = filename.split(" - ", 1)
+                songs.append({
+                    "filename": file_path.name,
+                    "name": song_name.strip(),
+                    "artists": artists.strip(),
+                    "size_bytes": file_size,
+                    "size_mb": round(file_size / (1024 * 1024), 2),
+                    "download_date": stat.st_mtime
+                })
+            else:
+                # Fallback if format doesn't match expected pattern
+                songs.append({
+                    "filename": file_path.name,
+                    "name": filename,
+                    "artists": "Unknown",
+                    "size_bytes": file_size,
+                    "size_mb": round(file_size / (1024 * 1024), 2),
+                    "download_date": stat.st_mtime
+                })
+
+        # Sort by download date (newest first)
+        songs.sort(key=lambda x: x["download_date"], reverse=True)
+
+        return {"songs": songs}
+
+    except Exception as e:
+        logger.error(f"Error getting downloaded songs: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to get downloaded songs")
+
+
+@app.get("/audio/{filename}")
+def serve_audio_file(filename: str):
+    """Serve audio files for DJ interface"""
+    try:
+        downloads_dir = Path("downloads")
+        file_path = downloads_dir / filename
+
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Audio file not found")
+
+        # Check if it's an MP3 file for security
+        if not filename.lower().endswith('.mp3'):
+            raise HTTPException(status_code=400, detail="Invalid file type")
+
+        # Create response with proper CORS headers
+        response = FileResponse(
+            path=str(file_path),
+            media_type="audio/mpeg",
+            filename=filename
+        )
+
+        # Add CORS headers for audio file access
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Expose-Headers"] = "Content-Length, Content-Range"
+
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error serving audio file {filename}: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to serve audio file")
+
+
+@app.options("/audio/{filename}")
+def serve_audio_file_options(filename: str):
+    """Handle preflight requests for audio files"""
+    from fastapi.responses import Response
+    response = Response()
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
+
 
 @app.get("/playlists")
 def get_playlists(request: Request):
     """Get user's playlists"""
     token = get_token_from_header(request)
-    
+
     try:
         sp = Spotify(auth=token)
         result = sp.current_user_playlists(limit=50)
-        
+
         playlists = []
         for playlist in result["items"]:
             playlists.append({
@@ -142,26 +255,28 @@ def get_playlists(request: Request):
                 "tracks_total": playlist["tracks"]["total"],
                 "image": playlist["images"][0]["url"] if playlist["images"] else None
             })
-        
+
         return {"playlists": playlists}
-    
+
     except SpotifyException as e:
         if e.http_status == 401:
             raise HTTPException(status_code=401, detail="Token expired")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error fetching playlists: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch playlists")
+        raise HTTPException(
+            status_code=500, detail="Failed to fetch playlists")
+
 
 @app.get("/playlist/{playlist_id}")
 def get_playlist(playlist_id: str, request: Request):
     """Get playlist details with tracks"""
     token = get_token_from_header(request)
-    
+
     try:
         sp = Spotify(auth=token)
         playlist = sp.playlist(playlist_id)
-        
+
         tracks = []
         for item in playlist["tracks"]["items"]:
             if item["track"]:  # Skip null tracks
@@ -174,7 +289,7 @@ def get_playlist(playlist_id: str, request: Request):
                     "cover": track["album"]["images"][0]["url"] if track["album"]["images"] else None,
                     "duration_ms": track["duration_ms"]
                 })
-        
+
         return {
             "id": playlist["id"],
             "name": playlist["name"],
@@ -184,7 +299,7 @@ def get_playlist(playlist_id: str, request: Request):
             "image": playlist["images"][0]["url"] if playlist["images"] else None,
             "tracks": tracks
         }
-    
+
     except SpotifyException as e:
         if e.http_status == 401:
             raise HTTPException(status_code=401, detail="Token expired")
@@ -194,7 +309,8 @@ def get_playlist(playlist_id: str, request: Request):
     except Exception as e:
         logger.error(f"Error fetching playlist {playlist_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch playlist")
-    
+
+
 @app.get("/download/track/{track_id}")
 def download_track_get(track_id: str):
     """Download a single track (GET method for testing)"""
@@ -228,19 +344,20 @@ def download_track_get(track_id: str):
             )
         )
 
+
 @app.post("/download/track/{track_id}")
 def download_track(track_id: str, request: Request):
     """Download a single track"""
     token = get_token_from_header(request)
-    
+
     try:
         # Verify track exists
         sp = Spotify(auth=token)
         track = sp.track(track_id)
-        
+
         # Download the track
         success = download_single_track(track_id)
-        
+
         if success:
             return {
                 "message": "Track download initiated successfully",
@@ -249,8 +366,9 @@ def download_track(track_id: str, request: Request):
                 "artists": [artist["name"] for artist in track["artists"]]
             }
         else:
-            raise HTTPException(status_code=500, detail="Failed to download track")
-            
+            raise HTTPException(
+                status_code=500, detail="Failed to download track")
+
     except SpotifyException as e:
         if e.http_status == 404:
             raise HTTPException(status_code=404, detail="Track not found")
@@ -261,19 +379,20 @@ def download_track(track_id: str, request: Request):
         logger.error(f"Error downloading track {track_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to download track")
 
+
 @app.post("/download/playlist/{playlist_id}")
 def download_playlist(playlist_id: str, request: Request):
     """Download all tracks from a playlist"""
     token = get_token_from_header(request)
-    
+
     try:
         # Verify playlist exists
         sp = Spotify(auth=token)
         playlist = sp.playlist(playlist_id)
-        
+
         # Download the playlist
         success = download_playlist_tracks(playlist_id)
-        
+
         if success:
             return {
                 "message": "Playlist download completed successfully",
@@ -292,7 +411,7 @@ def download_playlist(playlist_id: str, request: Request):
                     entity_id=playlist_id
                 )
             )
-            
+
     except SpotifyException as e:
         if e.http_status == 404:
             raise HTTPException(status_code=404, detail="Playlist not found")
@@ -311,43 +430,45 @@ def download_playlist(playlist_id: str, request: Request):
             )
         )
 
+
 @app.post("/download/playlist/{playlist_id}/stream")
 async def download_playlist_stream(playlist_id: str, request: Request):
     """Download all tracks from a playlist with real-time progress updates"""
     token = get_token_from_header(request)
-    
+
     try:
         # Verify playlist exists
         sp = Spotify(auth=token)
         playlist = sp.playlist(playlist_id)
-        
+
         async def generate_progress_updates():
             from spotify_downloader.downloader import SpotifyDownloader
             import queue
             import threading
-            
+
             downloader = SpotifyDownloader()
             progress_queue = queue.Queue()
-            
+
             # Send initial info
             initial_data = {
-                'type': 'started', 
-                'message': f'Starting download of playlist: {playlist["name"]}', 
-                'playlist_name': playlist['name'], 
+                'type': 'started',
+                'message': f'Starting download of playlist: {playlist["name"]}',
+                'playlist_name': playlist['name'],
                 'total_tracks': playlist['tracks']['total']
             }
             yield f"data: {json.dumps(initial_data)}\n\n"
-            
+
             # Create progress callback that puts data in queue
             def progress_callback(update_data):
                 progress_queue.put(update_data)
-            
+
             # Start download in thread
             download_thread = threading.Thread(
-                target=lambda: downloader.download_playlist(playlist_id, progress_callback)
+                target=lambda: downloader.download_playlist(
+                    playlist_id, progress_callback)
             )
             download_thread.start()
-            
+
             # Stream updates while download is running
             while download_thread.is_alive() or not progress_queue.empty():
                 try:
@@ -358,10 +479,10 @@ async def download_playlist_stream(playlist_id: str, request: Request):
                     # Send heartbeat to keep connection alive
                     yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
                     await asyncio.sleep(0.1)
-            
+
             # Wait for download to complete
             download_thread.join()
-            
+
             # Send final result
             final_result = {
                 'type': 'finished',
@@ -371,7 +492,7 @@ async def download_playlist_stream(playlist_id: str, request: Request):
                 'message': 'Playlist download completed'
             }
             yield f"data: {json.dumps(final_result)}\n\n"
-            
+
         return StreamingResponse(
             generate_progress_updates(),
             media_type="text/plain",
@@ -381,7 +502,7 @@ async def download_playlist_stream(playlist_id: str, request: Request):
                 "Content-Type": "text/event-stream",
             }
         )
-            
+
     except SpotifyException as e:
         if e.http_status == 404:
             raise HTTPException(status_code=404, detail="Playlist not found")
