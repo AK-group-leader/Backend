@@ -1,196 +1,312 @@
-# Spotify Downloader Backend
+# AI-Powered Sustainable Urban Planner
 
-A FastAPI backend service that downloads Spotify tracks and playlists by searching for them on YouTube and converting the audio to MP3 format.
+A comprehensive platform for analyzing environmental impact of urban development using satellite imagery, soil and water data, and AI models to predict the environmental impact of new construction.
 
-## Features
+## 🌍 Overview
 
-- Download individual Spotify tracks as MP3 files
-- Download entire Spotify playlists as MP3 files
-- High-quality audio (320 kbps MP3)
-- Automatic YouTube search and matching
-- RESTful API endpoints
-- Progress tracking and error handling
+Developing cities often face rising temperatures due to the "urban heat island effect," caused by too many concrete buildings and loss of vegetation. Our solution is a web platform that uses satellite imagery, soil and water data, and AI models to predict the environmental impact of new construction.
 
-## Prerequisites
+## ✨ Features
 
-### Required Software
+### 🔬 Environmental Impact Analysis
+
+- **Heat Island Effect Prediction**: Predict temperature rise and heat absorption risks
+- **Water Absorption Analysis**: Analyze flood risk and drainage efficiency
+- **Air Quality Impact Assessment**: Predict air quality changes and pollutant concentrations
+- **Comprehensive Environmental Analysis**: Combined analysis of all environmental factors
+
+### 📊 Data Integration
+
+- **NASA EarthData**: Satellite imagery and environmental data
+- **Sentinel Hub**: European Space Agency satellite data
+- **NOAA**: Weather and climate data
+- **OpenStreetMap**: Open source mapping data
+
+### 🤖 AI/ML Predictions
+
+- **Machine Learning Models**: Predict heat absorption, temperature rise, and soil/water absorption risks
+- **Confidence Intervals**: Statistical confidence levels for all predictions
+- **Time Horizon Analysis**: Predictions for 1-50 year timeframes
+- **Model Training**: Continuous model improvement and retraining
+
+### 🗺️ Interactive Visualizations
+
+- **Heatmaps**: Temperature, air quality, water absorption, and population density
+- **Before/After Scenarios**: Compare baseline vs proposed development scenarios
+- **Time Series Charts**: Track environmental trends over time
+- **3D Models**: Terrain and building models for spatial analysis
+
+### 🌱 Sustainability Recommendations
+
+- **Eco-friendly Alternatives**: Suggest green rooftops, tree cover, and water bodies
+- **Mitigation Strategies**: Reduce heat and improve sustainability
+- **Cost-Benefit Analysis**: Implementation costs and environmental benefits
+- **Priority Ranking**: Recommendations sorted by impact and feasibility
+
+## 🏗️ Architecture
+
+### Backend (FastAPI + Databricks)
+
+- **FastAPI**: RESTful API with automatic documentation
+- **Databricks**: Data processing and ML model training
+- **PostgreSQL**: Data storage and caching
+- **Redis**: Session management and caching
+
+### Frontend (React + Mapbox)
+
+- **React**: Modern web interface
+- **Mapbox**: Interactive mapping and visualization
+- **Real-time Updates**: Live environmental impact analysis
+
+### Data Sources
+
+- **NASA EarthData**: Landsat, MODIS, Sentinel-2 data
+- **Sentinel Hub**: High-resolution satellite imagery
+- **NOAA**: Weather and climate datasets
+- **OpenStreetMap**: Building, road, and landuse data
+
+## 🚀 Quick Start
+
+### Prerequisites
+
 1. **Python 3.8+**
-2. **FFmpeg** - Required for audio conversion to MP3 format
-   - **macOS**: `brew install ffmpeg`
-   - **Ubuntu/Debian**: `sudo apt install ffmpeg`
-   - **Windows**: Download from https://ffmpeg.org/download.html
+2. **PostgreSQL** (for data storage)
+3. **Redis** (for caching)
+4. **Databricks Account** (for ML processing)
+5. **API Keys** for data sources:
+   - NASA EarthData API key
+   - Sentinel Hub API key
+   - NOAA API key (optional)
 
-### Spotify API Setup
-1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-2. Create a new app
-3. Note down your `Client ID` and `Client Secret`
-4. Add `http://localhost:8000/callback` as a redirect URI
+### Installation
 
-## Installation
+1. **Clone the repository:**
 
-1. **Clone and navigate to the project:**
    ```bash
-   cd backend
+   git clone <repository-url>
+   cd Backend
    ```
 
-2. **Install dependencies:**
+2. **Create virtual environment:**
+
    ```bash
-   pip3 install -r requirements.txt
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. **Create environment file:**
-   Create a `.env` file in the project root:
-   ```env
-   SPOTIPY_CLIENT_ID=your_spotify_client_id
-   SPOTIPY_CLIENT_SECRET=your_spotify_client_secret
-   SPOTIPY_REDIRECT_URI=http://localhost:8000/callback
+3. **Install dependencies:**
+
+   ```bash
+   pip install -r requirements.txt
    ```
 
-## Usage
+4. **Create environment file:**
 
-### Start the Server
 ```bash
-python3 main.py
+   cp .env.example .env
 ```
 
-The server will start at `http://localhost:8000`
+Edit `.env` with your configuration:
 
-### API Endpoints
+```env
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/urban_planner
 
-#### Authentication
-- `GET /login` - Redirect to Spotify OAuth login
-- `GET /callback` - OAuth callback handler
+# Redis
+REDIS_URL=redis://localhost:6379/0
 
-#### Playlists
-- `GET /playlists` - Get user's playlists (requires Bearer token)
-- `GET /playlist/{id}` - Get playlist details with tracks (requires Bearer token)
+# Databricks
+DATABRICKS_HOST=your-databricks-host
+DATABRICKS_TOKEN=your-databricks-token
+DATABRICKS_CLUSTER_ID=your-cluster-id
 
-#### Downloads
-- `GET /download/track/{track_id}` - Download single track (testing)
-- `POST /download/track/{track_id}` - Download single track (requires Bearer token)
-- `POST /download/playlist/{playlist_id}` - Download entire playlist (requires Bearer token)
-- `POST /download/playlist/{playlist_id}/stream` - Download entire playlist with real-time progress updates (Server-Sent Events)
+# API Keys
+NASA_API_KEY=your-nasa-api-key
+SENTINEL_API_KEY=your-sentinel-api-key
+NOAA_API_KEY=your-noaa-api-key
 
-### Example Usage
-
-1. **Get access token:**
-   ```bash
-   curl http://localhost:8000/login
-   ```
-
-2. **Download a track:**
-   ```bash
-   curl -X POST "http://localhost:8000/download/track/4iV5W9uYEdYUVa79Axb7Rh" \
-        -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-   ```
-
-3. **Download a playlist (standard):**
-   ```bash
-   curl -X POST "http://localhost:8000/download/playlist/37i9dQZF1DXcBWIGoYBM5M" \
-        -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-   ```
-
-4. **Download a playlist with real-time progress (Server-Sent Events):**
-   ```bash
-   curl -X POST "http://localhost:8000/download/playlist/37i9dQZF1DXcBWIGoYBM5M/stream" \
-        -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-        -H "Accept: text/event-stream"
-   ```
-
-## Output Format
-
-All downloaded files are saved as **MP3 files** in the `downloads/` directory with:
-- **Quality**: 320 kbps
-- **Format**: MP3
-- **Naming**: `{Track Name} - {Artist Name}.mp3`
-
-## Real-time Progress Updates
-
-The `/stream` endpoint provides real-time progress updates using Server-Sent Events (SSE). The frontend can listen to these events to show:
-
-- **Current song being downloaded**
-- **Progress percentage** (e.g., "Downloading 3/10")
-- **Success/failure status** for each track
-- **Final completion summary**
-
-### Event Types
-
-The stream sends JSON events with the following types:
-
-- `started` - Download process initiated
-- `downloading` - Currently downloading a track
-- `completed` - Track successfully downloaded
-- `error` - Track download failed
-- `finished` - All downloads completed
-- `heartbeat` - Keep connection alive
-
-### Frontend Integration
-
-```javascript
-// Example JavaScript code to consume the stream
-const eventSource = new EventSource('/download/playlist/PLAYLIST_ID/stream', {
-    headers: { 'Authorization': 'Bearer YOUR_TOKEN' }
-});
-
-eventSource.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    
-    switch(data.type) {
-        case 'downloading':
-            updateProgress(data.progress, data.total);
-            showCurrentTrack(data.current_track);
-            break;
-        case 'completed':
-            showSuccess(data.current_track);
-            break;
-        case 'finished':
-            showFinalResults(data);
-            eventSource.close();
-            break;
-    }
-};
+# Application
+DEBUG=False
+LOG_LEVEL=INFO
 ```
 
-## File Structure
+5. **Initialize database:**
 
+   ```bash
+   python -c "from src.utils.database import init_database; import asyncio; asyncio.run(init_database())"
+   ```
+
+6. **Start the server:**
+   ```bash
+   python main.py
+   ```
+
+The API will be available at `http://localhost:8000`
+
+## 📚 API Documentation
+
+### Interactive Documentation
+
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
+
+### Key Endpoints
+
+#### Environmental Analysis
+
+- `POST /api/v1/analysis/environmental-impact` - Comprehensive environmental analysis
+- `GET /api/v1/analysis/heat-island/{analysis_id}` - Get heat island analysis results
+- `GET /api/v1/analysis/water-absorption/{analysis_id}` - Get water absorption analysis
+- `POST /api/v1/analysis/compare-scenarios` - Compare baseline vs proposed scenarios
+
+#### Data Ingestion
+
+- `POST /api/v1/data/ingest` - Ingest data from external sources
+- `GET /api/v1/data/sources` - Get available data sources
+- `GET /api/v1/data/ingestion-status/{ingestion_id}` - Get ingestion status
+- `GET /api/v1/data/data-catalog` - Get data catalog
+
+#### ML Predictions
+
+- `POST /api/v1/predictions/predict` - Make ML predictions
+- `POST /api/v1/predictions/batch-predict` - Batch predictions
+- `GET /api/v1/predictions/models` - Get available models
+- `POST /api/v1/predictions/model-training` - Train/retrain models
+
+#### Visualizations
+
+- `POST /api/v1/visualization/heatmap` - Generate heatmap visualizations
+- `POST /api/v1/visualization/before-after` - Generate before/after comparisons
+- `POST /api/v1/visualization/time-series` - Generate time series charts
+- `POST /api/v1/visualization/3d-model` - Generate 3D models
+
+## 🔧 Configuration
+
+### Environment Variables
+
+| Variable           | Description               | Default   |
+| ------------------ | ------------------------- | --------- |
+| `HOST`             | API host                  | `0.0.0.0` |
+| `PORT`             | API port                  | `8000`    |
+| `DEBUG`            | Debug mode                | `False`   |
+| `DATABASE_URL`     | Database connection URL   | Required  |
+| `REDIS_URL`        | Redis connection URL      | Required  |
+| `DATABRICKS_HOST`  | Databricks workspace host | Optional  |
+| `DATABRICKS_TOKEN` | Databricks access token   | Optional  |
+| `NASA_API_KEY`     | NASA EarthData API key    | Optional  |
+| `SENTINEL_API_KEY` | Sentinel Hub API key      | Optional  |
+| `NOAA_API_KEY`     | NOAA API key              | Optional  |
+
+### Data Storage
+
+- **Raw Data**: `data/raw/` - Ingested data from external sources
+- **Processed Data**: `data/processed/` - Cleaned and processed data
+- **ML Models**: `data/models/` - Trained ML models
+- **Static Files**: `static/` - Images and icons
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=src
+
+# Run specific test file
+pytest tests/test_analysis.py
 ```
-backend/
-├── main.py                 # FastAPI application
-├── requirements.txt        # Python dependencies
-├── .env                   # Environment variables (create this)
-├── downloads/             # Downloaded MP3 files
-└── spotify_downloader/
-    ├── __init__.py
-    └── downloader.py      # Core download logic
+
+## 📊 Example Usage
+
+### 1. Environmental Impact Analysis
+
+```python
+import requests
+
+# Analyze environmental impact
+response = requests.post("http://localhost:8000/api/v1/analysis/environmental-impact", json={
+    "coordinates": [[-74.0059, 40.7128], [-74.0059, 40.7589], [-73.9352, 40.7589], [-73.9352, 40.7128]],
+    "analysis_type": "comprehensive",
+    "time_horizon": 10,
+    "include_recommendations": True
+})
+
+analysis_results = response.json()
+print(f"Overall risk score: {analysis_results['results']['overall_risk_score']}")
 ```
 
-## Troubleshooting
+### 2. Data Ingestion
 
-### Common Issues
+```python
+# Ingest data from NASA
+response = requests.post("http://localhost:8000/api/v1/data/ingest", json={
+    "data_source": "nasa",
+    "coordinates": [[-74.0059, 40.7128], [-74.0059, 40.7589], [-73.9352, 40.7589], [-73.9352, 40.7128]],
+    "date_range": {
+        "start_date": "2024-01-01",
+        "end_date": "2024-01-31"
+    },
+    "data_types": ["landsat", "modis"]
+})
 
-1. **"FFmpeg not found" error:**
-   - Install FFmpeg (see Prerequisites)
-   - Ensure FFmpeg is in your system PATH
+ingestion_results = response.json()
+print(f"Records ingested: {ingestion_results['records_ingested']}")
+```
 
-2. **"No module named 'yt_dlp'" error:**
-   - Run: `pip3 install -r requirements.txt`
+### 3. Generate Heatmap
 
-3. **Spotify API errors:**
-   - Verify your credentials in `.env` file
-   - Check if your Spotify app has the correct redirect URI
+```python
+# Generate temperature heatmap
+response = requests.post("http://localhost:8000/api/v1/visualization/heatmap", json={
+    "data_type": "temperature",
+    "coordinates": [[-74.0059, 40.7128], [-74.0059, 40.7589], [-73.9352, 40.7589], [-73.9352, 40.7128]],
+    "resolution": 100,
+    "color_scheme": "viridis"
+})
 
-4. **Downloads not working:**
-   - Check internet connection
-   - Verify YouTube is accessible
-   - Check logs for specific error messages
+heatmap_data = response.json()
+print(f"Heatmap generated: {heatmap_data['heatmap_id']}")
+```
 
-### Logs
+## 🌱 Sustainability Impact
 
-The application provides detailed logging. Check the console output for:
-- Download progress
-- Error messages
-- Success confirmations
+This platform helps cities plan sustainable growth by:
 
-## Legal Notice
+- **Reducing Urban Heat Islands**: Identify areas at risk and suggest mitigation strategies
+- **Improving Water Management**: Predict flood risks and optimize drainage systems
+- **Enhancing Air Quality**: Monitor and predict air pollution impacts
+- **Promoting Green Infrastructure**: Recommend eco-friendly development alternatives
+- **Supporting Data-Driven Decisions**: Provide evidence-based environmental impact assessments
 
-This tool is for personal use only. Please respect copyright laws and terms of service of both Spotify and YouTube. Only download content you have the right to download.
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **NASA** for Earth observation data
+- **European Space Agency** for Sentinel satellite data
+- **NOAA** for weather and climate data
+- **OpenStreetMap** contributors for open mapping data
+- **Databricks** for ML platform capabilities
+
+## 📞 Support
+
+For support and questions:
+
+- Create an issue in the repository
+- Contact the development team
+- Check the documentation at `/docs`
+
+---
+
+**Built with ❤️ for sustainable urban development**
