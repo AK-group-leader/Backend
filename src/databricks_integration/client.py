@@ -21,9 +21,9 @@ class DatabricksClient:
         """Initialize Databricks client"""
         self.host = settings.DATABRICKS_HOST
         self.token = settings.DATABRICKS_TOKEN
-        self.cluster_id = settings.DATABRICKS_CLUSTER_ID
+        self.warehouse_id = settings.DATABRICKS_WAREHOUSE_ID
 
-        if not all([self.host, self.token]):
+        if not all([self.host, self.token, self.warehouse_id]):
             logger.warning("Databricks credentials not configured")
             self._enabled = False
         else:
@@ -36,29 +36,34 @@ class DatabricksClient:
             # SQL connection
             self.sql_connection = sql.connect(
                 server_hostname=self.host,
-                http_path=f"/sql/1.0/warehouses/{self.cluster_id}",
+                http_path=f"/sql/1.0/warehouses/{self.warehouse_id}",
                 access_token=self.token
             )
+            logger.info(
+                f"Databricks SQL Warehouse connection initialized successfully (Warehouse ID: {self.warehouse_id})")
 
-            # Spark session
-            self.spark = DatabricksSession.builder \
-                .remote(
-                    host=self.host,
-                    token=self.token,
-                    cluster_id=self.cluster_id
-                ) \
-                .getOrCreate()
+            # Spark sessions are not supported with serverless warehouses
+            logger.info(
+                "Spark sessions not available with serverless warehouses - using SQL only")
+            self.spark = None
+            self._spark_enabled = False
 
-            logger.info("Databricks connections initialized successfully")
+            logger.info(
+                "Databricks serverless warehouse connection initialized successfully")
 
         except Exception as e:
             logger.error(
                 f"Failed to initialize Databricks connections: {str(e)}")
             self._enabled = False
+            self._spark_enabled = False
 
     def is_enabled(self) -> bool:
         """Check if Databricks is enabled and configured"""
         return self._enabled
+
+    def is_spark_enabled(self) -> bool:
+        """Check if Spark session is enabled"""
+        return getattr(self, '_spark_enabled', False)
 
     async def execute_sql(self, query: str, parameters: Optional[Dict] = None) -> List[Dict[str, Any]]:
         """Execute SQL query on Databricks"""
@@ -151,10 +156,10 @@ class DatabricksClient:
 
     def close(self):
         """Close Databricks connections"""
-        if hasattr(self, 'sql_connection'):
+        if hasattr(self, 'sql_connection') and self.sql_connection:
             self.sql_connection.close()
 
-        if hasattr(self, 'spark'):
+        if hasattr(self, 'spark') and self.spark and self.is_spark_enabled():
             self.spark.stop()
 
         logger.info("Databricks connections closed")

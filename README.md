@@ -92,9 +92,9 @@ Our solution is a web platform that uses satellite imagery, soil and water data,
 ### Prerequisites
 
 1. **Python 3.8+**
-2. **PostgreSQL** (for data storage)
-3. **Redis** (for caching)
-4. **Databricks Account** (for ML processing)
+2. **Databricks Account** (for data storage and ML processing)
+3. **Redis** (for caching, optional)
+4. **PostgreSQL** (optional, for additional local storage)
 5. **API Keys** for data sources:
    - AlphaEarth API key (primary data source)
    - NASA EarthData API key
@@ -132,16 +132,16 @@ Our solution is a web platform that uses satellite imagery, soil and water data,
 Edit `.env` with your configuration:
 
 ```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/urban_planner
+# Database (using Databricks as primary - DATABASE_URL is optional)
+# DATABASE_URL=postgresql://user:password@localhost:5432/urban_planner
 
-# Redis
+# Redis (optional)
 REDIS_URL=redis://localhost:6379/0
 
-# Databricks
+# Databricks (required for data storage and ML processing)
 DATABRICKS_HOST=your-databricks-host
 DATABRICKS_TOKEN=your-databricks-token
-DATABRICKS_CLUSTER_ID=your-cluster-id
+DATABRICKS_WAREHOUSE_ID=your-warehouse-id
 
 # API Keys
 ALPHAEARTH_API_KEY=your-alphaearth-api-key
@@ -154,13 +154,7 @@ DEBUG=False
 LOG_LEVEL=INFO
 ```
 
-5. **Initialize database:**
-
-   ```bash
-   python -c "from src.utils.database import init_database; import asyncio; asyncio.run(init_database())"
-   ```
-
-6. **Start the server:**
+5. **Start the server:**
    ```bash
    python main.py
    ```

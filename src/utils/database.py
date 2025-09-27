@@ -6,6 +6,7 @@ from sqlalchemy import create_engine, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+from fastapi import HTTPException
 import logging
 
 from src.utils.config import get_settings
@@ -13,31 +14,54 @@ from src.utils.config import get_settings
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-# Database setup
-engine = create_engine(
-    settings.DATABASE_URL,
-    poolclass=StaticPool,
-    connect_args={
-        "check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
-)
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Database setup - only if DATABASE_URL is provided
+if settings.DATABASE_URL:
+    engine = create_engine(
+        settings.DATABASE_URL,
+        poolclass=StaticPool,
+        connect_args={
+            "check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
+    )
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+else:
+    engine = None
+    SessionLocal = None
 Base = declarative_base()
 
 
 async def init_database():
     """Initialize database tables"""
+    settings = get_settings()
+
+    # If no DATABASE_URL is configured, use Databricks as primary database
+    if not settings.DATABASE_URL:
+        logger.info(
+            "No DATABASE_URL configured - using Databricks as primary database")
+        return
+
     try:
+        # Test database connection first
+        with engine.connect() as connection:
+            connection.execute("SELECT 1")
+
         # Create all tables
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
     except Exception as e:
-        logger.error(f"Failed to initialize database: {str(e)}")
-        raise
+        logger.warning(f"Database connection failed: {str(e)}")
+        logger.warning(
+            "Running in database-disconnected mode (using Databricks)")
+        # Don't raise the exception, allow the server to start without database
 
 
 def get_db():
     """Get database session"""
+    if not SessionLocal:
+        raise HTTPException(
+            status_code=503,
+            detail="Database not configured - using Databricks as primary database"
+        )
+
     db = SessionLocal()
     try:
         yield db

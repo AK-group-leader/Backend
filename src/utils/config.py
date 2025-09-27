@@ -22,10 +22,10 @@ class Settings(BaseSettings):
         description="Allowed CORS origins"
     )
 
-    # Database Settings
-    DATABASE_URL: str = Field(
-        default="postgresql://user:password@localhost:5432/urban_planner",
-        description="Database connection URL"
+    # Database Settings (using Databricks as primary database)
+    DATABASE_URL: Optional[str] = Field(
+        default=None,
+        description="Optional database connection URL (using Databricks as primary)"
     )
 
     # Redis Settings
@@ -43,9 +43,9 @@ class Settings(BaseSettings):
         default=None,
         description="Databricks access token"
     )
-    DATABRICKS_CLUSTER_ID: Optional[str] = Field(
+    DATABRICKS_WAREHOUSE_ID: Optional[str] = Field(
         default=None,
-        description="Databricks cluster ID"
+        description="Databricks SQL Warehouse ID (for serverless warehouses)"
     )
 
     # Data Source API Keys
