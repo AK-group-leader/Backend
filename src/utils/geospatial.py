@@ -25,7 +25,7 @@ class GeospatialProcessor:
     def validate_coordinates(self, coordinates: List[List[float]]) -> bool:
         """Validate coordinate format and bounds"""
         try:
-            if not coordinates or len(coordinates) < 3:
+            if not coordinates or len(coordinates) < 2:
                 return False
 
             for coord in coordinates:
@@ -55,8 +55,27 @@ class GeospatialProcessor:
     def calculate_area_km2(self, coordinates: List[List[float]]) -> float:
         """Calculate area in square kilometers"""
         try:
-            # Create polygon
-            polygon = Polygon(coordinates)
+            # Handle bounding box (2 points) vs polygon (3+ points)
+            if len(coordinates) == 2:
+                # Create bounding box from two points
+                lons = [coord[0] for coord in coordinates]
+                lats = [coord[1] for coord in coordinates]
+
+                # Create rectangle from bounding box
+                min_lon, max_lon = min(lons), max(lons)
+                min_lat, max_lat = min(lats), max(lats)
+
+                # Create rectangle polygon
+                polygon = Polygon([
+                    [min_lon, min_lat],
+                    [max_lon, min_lat],
+                    [max_lon, max_lat],
+                    [min_lon, max_lat],
+                    [min_lon, min_lat]  # Close the polygon
+                ])
+            else:
+                # Create polygon from coordinates
+                polygon = Polygon(coordinates)
 
             # Determine appropriate UTM zone
             centroid = polygon.centroid

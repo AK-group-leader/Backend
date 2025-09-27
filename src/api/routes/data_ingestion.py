@@ -9,8 +9,6 @@ import logging
 
 from src.data_ingestion.alphaearth_ingestion import AlphaEarthDataIngestion
 from src.data_ingestion.nasa_ingestion import NASADataIngestion
-from src.data_ingestion.sentinel_ingestion import SentinelDataIngestion
-from src.data_ingestion.noaa_ingestion import NOAADataIngestion
 from src.data_ingestion.osm_ingestion import OSMDataIngestion
 from src.databricks_integration.delta_lake import delta_lake_manager
 
@@ -23,7 +21,7 @@ class DataIngestionRequest(BaseModel):
     data_source: str = Field(
         ...,
         description="Data source to ingest from",
-        enum=["alphaearth", "nasa", "sentinel", "noaa", "osm", "all"]
+        enum=["alphaearth", "nasa", "osm", "all"]
     )
     coordinates: List[List[float]] = Field(
         ...,
@@ -104,18 +102,47 @@ async def ingest_data(
                 data_types=request.data_types
             )
         elif request.data_source == "sentinel":
-            ingester = SentinelDataIngestion()
+            # Use AlphaEarth for Sentinel-like satellite data
+            ingester = AlphaEarthDataIngestion()
+            # Map Sentinel data types to AlphaEarth equivalents
+            alphaearth_types = []
+            if request.data_types:
+                for data_type in request.data_types:
+                    if data_type in ["sentinel-1", "sentinel-2", "sentinel-3"]:
+                        alphaearth_types.append("satellite")
+                    elif data_type in ["ndvi", "vegetation"]:
+                        alphaearth_types.append("vegetation")
+                    elif data_type == "dem":
+                        alphaearth_types.append("elevation")
+                    else:
+                        alphaearth_types.append(
+                            "satellite")  # Default fallback
+            else:
+                alphaearth_types = ["satellite", "vegetation", "elevation"]
+
             result = await ingester.ingest_data(
                 coordinates=request.coordinates,
                 date_range=request.date_range,
-                data_types=request.data_types
+                data_types=list(set(alphaearth_types))  # Remove duplicates
             )
         elif request.data_source == "noaa":
-            ingester = NOAADataIngestion()
+            # Use AlphaEarth for NOAA-like climate data
+            ingester = AlphaEarthDataIngestion()
+            # Map NOAA data types to AlphaEarth equivalents
+            alphaearth_types = []
+            if request.data_types:
+                for data_type in request.data_types:
+                    if data_type in ["weather", "climate", "precipitation", "temperature", "wind", "humidity", "pressure", "solar_radiation"]:
+                        alphaearth_types.append("climate")
+                    else:
+                        alphaearth_types.append("climate")  # Default fallback
+            else:
+                alphaearth_types = ["climate"]
+
             result = await ingester.ingest_data(
                 coordinates=request.coordinates,
                 date_range=request.date_range,
-                data_types=request.data_types
+                data_types=list(set(alphaearth_types))  # Remove duplicates
             )
         elif request.data_source == "osm":
             ingester = OSMDataIngestion()
@@ -174,7 +201,7 @@ async def ingest_from_all_sources(
         "sources": {}
     }
 
-    sources = ["alphaearth", "nasa", "sentinel", "noaa", "osm"]
+    sources = ["alphaearth", "nasa", "osm"]
 
     for source in sources:
         try:
@@ -182,10 +209,6 @@ async def ingest_from_all_sources(
                 ingester = AlphaEarthDataIngestion()
             elif source == "nasa":
                 ingester = NASADataIngestion()
-            elif source == "sentinel":
-                ingester = SentinelDataIngestion()
-            elif source == "noaa":
-                ingester = NOAADataIngestion()
             elif source == "osm":
                 ingester = OSMDataIngestion()
 
@@ -230,17 +253,19 @@ async def get_available_data_sources():
             },
             {
                 "name": "sentinel",
-                "description": "Sentinel Hub - European Space Agency satellite data",
-                "data_types": ["sentinel-1", "sentinel-2", "sentinel-3", "dem"],
-                "update_frequency": "daily",
-                "coverage": "global"
+                "description": "Sentinel data via AlphaEarth - High-resolution satellite imagery and vegetation analysis",
+                "data_types": ["satellite", "vegetation", "elevation", "ndvi", "ndwi"],
+                "update_frequency": "real-time",
+                "coverage": "global",
+                "note": "Routed through AlphaEarth for comprehensive satellite data"
             },
             {
                 "name": "noaa",
-                "description": "NOAA - Weather and climate data",
-                "data_types": ["weather", "climate", "precipitation", "temperature"],
-                "update_frequency": "hourly",
-                "coverage": "global"
+                "description": "NOAA weather data via AlphaEarth - Climate and weather information",
+                "data_types": ["climate", "weather", "temperature", "precipitation", "wind"],
+                "update_frequency": "real-time",
+                "coverage": "global",
+                "note": "Routed through AlphaEarth for comprehensive climate data"
             },
             {
                 "name": "osm",

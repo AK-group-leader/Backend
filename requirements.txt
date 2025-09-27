@@ -24,7 +24,7 @@ databricks-connect>=13.3.0
 # Data sources APIs
 requests>=2.31.0
 aiohttp>=3.9.1
-sentinelhub>=3.10.0
+# sentinelhub>=3.10.0  # Removed - Sentinel data now provided via AlphaEarth
 earthengine-api>=0.1.370
 
 # Geospatial and mapping

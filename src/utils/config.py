@@ -51,20 +51,14 @@ class Settings(BaseSettings):
     # Data Source API Keys
     ALPHAEARTH_API_KEY: Optional[str] = Field(
         default=None,
-        description="AlphaEarth API key for satellite, soil, water, and climate data"
+        description="AlphaEarth API key for satellite, soil, water, climate, and vegetation data"
     )
     NASA_API_KEY: Optional[str] = Field(
         default=None,
         description="NASA EarthData API key"
     )
-    SENTINEL_API_KEY: Optional[str] = Field(
-        default=None,
-        description="Sentinel Hub API key"
-    )
-    NOAA_API_KEY: Optional[str] = Field(
-        default=None,
-        description="NOAA API key"
-    )
+    # SENTINEL_API_KEY: Deprecated - Sentinel data now provided via AlphaEarth
+    # NOAA_API_KEY: Deprecated - NOAA data now provided via AlphaEarth
 
     # File Storage
     DATA_DIR: str = Field(
@@ -94,6 +88,20 @@ class Settings(BaseSettings):
     LOG_FILE: Optional[str] = Field(
         default=None,
         description="Log file path"
+    )
+
+    # Google Earth Engine Settings
+    GEE_SERVICE_ACCOUNT: Optional[str] = Field(
+        default=None,
+        description="Google Earth Engine service account email"
+    )
+    GEE_KEY_FILE: Optional[str] = Field(
+        default=None,
+        description="Google Earth Engine service account key file path"
+    )
+    GEE_PROJECT: Optional[str] = Field(
+        default=None,
+        description="Google Earth Engine project ID"
     )
 
     class Config:

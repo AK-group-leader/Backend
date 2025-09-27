@@ -11,7 +11,7 @@ import uvicorn
 import logging
 from pathlib import Path
 
-from src.api.routes import analysis, data_ingestion, predictions, visualization, alphaearth, uhi_analysis
+from src.api.routes import analysis, data_ingestion, predictions, visualization, alphaearth, uhi_analysis, gee_analysis
 from src.utils.config import get_settings
 from src.utils.database import init_database
 from src.utils.logging_config import setup_logging
@@ -42,18 +42,28 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="AI-Powered Sustainable Urban Planner",
     description="""
-    A comprehensive platform for analyzing environmental impact of urban development.
+    A comprehensive platform for analyzing environmental impact of urban development with Google Earth Engine integration.
     
     ## Features
     
+    * **Urban Heat Island Mapping**: Detect hotspots where planting trees or adding reflective roofs reduces warming
+    * **Green Space Optimization**: Identify areas lacking vegetation vs high population density
+    * **Sustainable Building Zones**: Combine soil/water data to plan construction that won't worsen flooding/erosion
     * **Environmental Impact Analysis**: Predict heat absorption, temperature rise, and soil/water absorption risks
-    * **Data Integration**: Ingest data from NASA EarthData, Sentinel Hub, NOAA, and OpenStreetMap
+    * **Data Integration**: Ingest data from Google Earth Engine, NASA EarthData, Sentinel Hub, NOAA, and OpenStreetMap
     * **AI/ML Predictions**: Use machine learning models to predict environmental outcomes
     * **Interactive Visualizations**: Generate heatmaps and before/after scenarios
     * **Sustainability Recommendations**: Suggest eco-friendly alternatives like green rooftops and tree cover
     
+    ## Google Earth Engine Analysis
+    
+    * **Urban Heat Island**: Landsat-9 surface temperature analysis
+    * **Green Space**: NDVI analysis with population density correlation
+    * **Sustainable Zones**: Multi-criteria analysis combining terrain, soil, water, and air quality
+    
     ## Data Sources
     
+    * Google Earth Engine (Landsat-9, Sentinel-5P, SRTM, WorldPop)
     * NASA EarthData
     * Sentinel Hub
     * NOAA
@@ -85,6 +95,8 @@ app.include_router(alphaearth.router,
                    prefix="/api/v1/alphaearth", tags=["AlphaEarth"])
 app.include_router(uhi_analysis.router,
                    prefix="/api/v1/uhi", tags=["Urban Heat Island Analysis"])
+app.include_router(gee_analysis.router,
+                   prefix="/api/v1/gee", tags=["Google Earth Engine Analysis"])
 
 
 @app.get("/")
@@ -101,6 +113,7 @@ async def root():
             "visualization": "/api/v1/visualization",
             "alphaearth": "/api/v1/alphaearth",
             "uhi_analysis": "/api/v1/uhi",
+            "gee_analysis": "/api/v1/gee",
             "docs": "/docs",
             "redoc": "/redoc"
         }

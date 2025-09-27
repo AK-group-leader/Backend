@@ -28,7 +28,9 @@ Our solution is a web platform that uses satellite imagery, soil and water data,
 
 ### 🔬 Environmental Impact Analysis
 
-- **Urban Heat Island Analysis**: Comprehensive UHI impact assessment including energy consumption, air quality, and public health
+- **Urban Heat Island Mapping**: Detect hotspots using Landsat surface temperature where planting trees or adding reflective roofs reduces warming
+- **Green Space Optimization**: Identify areas lacking vegetation vs high population density for optimization opportunities
+- **Sustainable Building Zones**: Combine soil/water data to plan construction that won't worsen flooding or erosion
 - **Heat Island Effect Prediction**: Predict temperature rise and heat absorption risks
 - **Water Absorption Analysis**: Analyze flood risk and drainage efficiency
 - **Air Quality Impact Assessment**: Predict air quality changes and pollutant concentrations
@@ -36,6 +38,7 @@ Our solution is a web platform that uses satellite imagery, soil and water data,
 
 ### 📊 Data Integration
 
+- **Google Earth Engine**: Advanced satellite analysis using Landsat-9, Sentinel-5P, SRTM, and WorldPop datasets
 - **AlphaEarth**: Primary data source for satellite, soil, water, and climate data
 - **NASA EarthData**: Satellite imagery and environmental data
 - **Sentinel Hub**: European Space Agency satellite data
@@ -81,11 +84,10 @@ Our solution is a web platform that uses satellite imagery, soil and water data,
 
 ### Data Sources
 
-- **AlphaEarth**: Comprehensive environmental data platform with real-time satellite, soil, water, and climate data
-- **NASA EarthData**: Landsat, MODIS, Sentinel-2 data
-- **Sentinel Hub**: High-resolution satellite imagery
-- **NOAA**: Weather and climate datasets
+- **AlphaEarth**: Comprehensive environmental data platform with real-time satellite, soil, water, and climate data (primary source)
+- **NASA EarthData**: Landsat, MODIS, Sentinel-2 data (optional backup)
 - **OpenStreetMap**: Building, road, and landuse data
+- **Note**: Sentinel Hub and NOAA data are now provided through AlphaEarth for unified access
 
 ## 🚀 Quick Start
 
@@ -96,10 +98,8 @@ Our solution is a web platform that uses satellite imagery, soil and water data,
 3. **Redis** (for caching, optional)
 4. **PostgreSQL** (optional, for additional local storage)
 5. **API Keys** for data sources:
-   - AlphaEarth API key (primary data source)
-   - NASA EarthData API key
-   - Sentinel Hub API key
-   - NOAA API key (optional)
+   - AlphaEarth API key (primary data source - provides satellite, climate, soil, and vegetation data)
+   - NASA EarthData API key (optional backup)
 
 ### Installation
 
@@ -146,8 +146,12 @@ DATABRICKS_WAREHOUSE_ID=your-warehouse-id
 # API Keys
 ALPHAEARTH_API_KEY=your-alphaearth-api-key
 NASA_API_KEY=your-nasa-api-key
-SENTINEL_API_KEY=your-sentinel-api-key
-NOAA_API_KEY=your-noaa-api-key
+# SENTINEL_API_KEY and NOAA_API_KEY no longer needed - data provided via AlphaEarth
+
+# Google Earth Engine (for advanced satellite analysis)
+GEE_SERVICE_ACCOUNT=your-service-account@project.iam.gserviceaccount.com
+GEE_KEY_FILE=gee-service-account-key.json
+GEE_PROJECT=your-google-cloud-project-id
 
 # Application
 DEBUG=False
@@ -160,6 +164,28 @@ LOG_LEVEL=INFO
    ```
 
 The API will be available at `http://localhost:8000`
+
+### 🌍 Google Earth Engine Setup (Optional but Recommended)
+
+For advanced satellite analysis capabilities, set up Google Earth Engine:
+
+1. **Quick Setup (Automated):**
+   ```bash
+   python setup_gee.py
+   ```
+
+2. **Manual Setup:**
+   - Get a Google Earth Engine account
+   - Install: `pip install earthengine-api`
+   - Authenticate: `earthengine authenticate`
+   - Configure environment variables in `.env`
+
+3. **Test the setup:**
+   ```bash
+   python example_gee_usage.py
+   ```
+
+For detailed setup instructions, see [GEE_SETUP.md](GEE_SETUP.md)
 
 ## 📚 API Documentation
 
@@ -197,6 +223,15 @@ The API will be available at `http://localhost:8000`
 - `POST /api/v1/visualization/before-after` - Generate before/after comparisons
 - `POST /api/v1/visualization/time-series` - Generate time series charts
 - `POST /api/v1/visualization/3d-model` - Generate 3D models
+
+#### Google Earth Engine Analysis
+
+- `POST /api/v1/gee/urban-heat-island` - Urban Heat Island mapping using Landsat surface temperature
+- `POST /api/v1/gee/green-space-optimization` - Green space optimization analysis
+- `POST /api/v1/gee/sustainable-building-zones` - Sustainable building zones analysis
+- `POST /api/v1/gee/comprehensive-analysis` - Comprehensive analysis combining all three
+- `GET /api/v1/gee/export-status/{task_id}` - Check export task status
+- `GET /api/v1/gee/analysis-capabilities` - Get available analysis capabilities
 
 #### AlphaEarth Integration
 
