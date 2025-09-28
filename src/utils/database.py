@@ -23,10 +23,11 @@ if settings.DATABASE_URL:
             "check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
     )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base = declarative_base()
 else:
     engine = None
     SessionLocal = None
-Base = declarative_base()
+    Base = declarative_base()
 
 
 async def init_database():

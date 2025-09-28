@@ -63,10 +63,10 @@ class DeltaLakeManager:
             }
 
             # Create table if it doesn't exist
-            await self._create_data_table(table_name)
+            self._create_data_table(table_name)
 
             # Insert data
-            await self._insert_data(table_name, storage_data)
+            self._insert_data(table_name, storage_data)
 
             logger.info(
                 f"AlphaEarth {data_type} data stored in Delta Lake: {table_name}")
@@ -129,7 +129,7 @@ class DeltaLakeManager:
             query += " ORDER BY ingestion_timestamp DESC LIMIT 100"
 
             # Execute query
-            results = await self.client.execute_sql(query)
+            results = self.client.execute_sql(query)
 
             logger.info(f"Retrieved {len(results)} records for {data_type}")
             return results
@@ -262,7 +262,7 @@ class DeltaLakeManager:
             logger.error(f"Climate data processing failed: {str(e)}")
             raise
 
-    async def _create_data_table(self, table_name: str):
+    def _create_data_table(self, table_name: str):
         """Create Delta Lake table for data storage"""
         try:
             schema = """
@@ -292,13 +292,13 @@ class DeltaLakeManager:
                 data_source STRING
             """
 
-            await self.client.create_table(table_name, schema)
+            self.client.create_table(table_name, schema)
 
         except Exception as e:
             logger.error(f"Failed to create table {table_name}: {str(e)}")
             raise
 
-    async def _insert_data(self, table_name: str, data: Dict[str, Any]):
+    def _insert_data(self, table_name: str, data: Dict[str, Any]):
         """Insert data into Delta Lake table"""
         try:
             # Convert data to SQL insert format
@@ -331,7 +331,7 @@ class DeltaLakeManager:
                 )
             """
 
-            await self.client.execute_sql(insert_query)
+            self.client.execute_sql(insert_query)
 
         except Exception as e:
             logger.error(f"Failed to insert data into {table_name}: {str(e)}")

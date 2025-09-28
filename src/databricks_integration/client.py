@@ -65,7 +65,7 @@ class DatabricksClient:
         """Check if Spark session is enabled"""
         return getattr(self, '_spark_enabled', False)
 
-    async def execute_sql(self, query: str, parameters: Optional[Dict] = None) -> List[Dict[str, Any]]:
+    def execute_sql(self, query: str, parameters: Optional[Dict] = None) -> List[Dict[str, Any]]:
         """Execute SQL query on Databricks"""
         if not self.is_enabled():
             raise Exception("Databricks not configured")
@@ -89,7 +89,7 @@ class DatabricksClient:
             logger.error(f"SQL execution failed: {str(e)}")
             raise
 
-    async def read_table(self, table_name: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    def read_table(self, table_name: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """Read data from Databricks table"""
         if not self.is_enabled():
             raise Exception("Databricks not configured")
@@ -99,7 +99,7 @@ class DatabricksClient:
             if limit:
                 query += f" LIMIT {limit}"
 
-            return await self.execute_sql(query)
+            return self.execute_sql(query)
 
         except Exception as e:
             logger.error(f"Failed to read table {table_name}: {str(e)}")
@@ -119,21 +119,21 @@ class DatabricksClient:
                 f"Failed to write DataFrame to table {table_name}: {str(e)}")
             raise
 
-    async def create_table(self, table_name: str, schema: str):
+    def create_table(self, table_name: str, schema: str):
         """Create table in Databricks"""
         if not self.is_enabled():
             raise Exception("Databricks not configured")
 
         try:
             query = f"CREATE TABLE IF NOT EXISTS {table_name} ({schema})"
-            await self.execute_sql(query)
+            self.execute_sql(query)
             logger.info(f"Table {table_name} created successfully")
 
         except Exception as e:
             logger.error(f"Failed to create table {table_name}: {str(e)}")
             raise
 
-    async def run_ml_pipeline(self, pipeline_name: str, parameters: Dict[str, Any]):
+    def run_ml_pipeline(self, pipeline_name: str, parameters: Dict[str, Any]):
         """Run ML pipeline on Databricks"""
         if not self.is_enabled():
             raise Exception("Databricks not configured")
