@@ -80,6 +80,16 @@ class Settings(BaseSettings):
         description="Prediction cache TTL in seconds"
     )
 
+    # Google Gemini AI API
+    GEMINI_API_KEY: Optional[str] = Field(
+        default=None,
+        description="Google Gemini API key for AI chatbot"
+    )
+    GOOGLE_API_KEY: Optional[str] = Field(
+        default=None,
+        description="Google API key (alternative name for Gemini API key)"
+    )
+
     # Logging
     LOG_LEVEL: str = Field(
         default="INFO",

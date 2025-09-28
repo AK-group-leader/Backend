@@ -11,7 +11,7 @@ import uvicorn
 import logging
 from pathlib import Path
 
-from src.api.routes import analysis, data_ingestion, predictions, visualization, alphaearth, uhi_analysis, gee_analysis
+from src.api.routes import analysis, data_ingestion, predictions, visualization, alphaearth, uhi_analysis, gee_analysis, chatbot
 from src.utils.config import get_settings
 from src.utils.database import init_database
 from src.utils.logging_config import setup_logging
@@ -97,6 +97,8 @@ app.include_router(uhi_analysis.router,
                    prefix="/api/v1/uhi", tags=["Urban Heat Island Analysis"])
 app.include_router(gee_analysis.router,
                    prefix="/api/v1/gee", tags=["Google Earth Engine Analysis"])
+app.include_router(chatbot.router,
+                   prefix="/api/v1/chatbot", tags=["AI Chatbot"])
 
 
 @app.get("/")
@@ -114,6 +116,7 @@ async def root():
             "alphaearth": "/api/v1/alphaearth",
             "uhi_analysis": "/api/v1/uhi",
             "gee_analysis": "/api/v1/gee",
+            "chatbot": "/api/v1/chatbot",
             "docs": "/docs",
             "redoc": "/redoc"
         }

@@ -27,6 +27,9 @@ aiohttp>=3.9.1
 # sentinelhub>=3.10.0  # Removed - Sentinel data now provided via AlphaEarth
 earthengine-api>=0.1.370
 
+# AI and Machine Learning APIs
+google-generativeai>=0.3.2
+
 # Geospatial and mapping
 pyproj>=3.6.1
 fiona>=1.9.5
