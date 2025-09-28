@@ -27,8 +27,9 @@ class GoogleEarthEngineService:
         try:
             self._initialize_gee()
         except Exception as e:
-            logger.error(f"Failed to initialize Google Earth Engine: {str(e)}")
-            raise
+            logger.warning(f"Failed to initialize Google Earth Engine: {str(e)}")
+            logger.warning("GEE service will run in mock mode. Set up GEE credentials for full functionality.")
+            self.initialized = False
     
     def _initialize_gee(self):
         """Initialize Google Earth Engine with authentication"""
@@ -90,6 +91,9 @@ class GoogleEarthEngineService:
         Returns:
             Dictionary containing UHI analysis results
         """
+        if not self.initialized:
+            return self._get_mock_uhi_data(coordinates, date_range)
+        
         try:
             roi = self.create_roi_from_coordinates(coordinates)
             
@@ -227,6 +231,9 @@ class GoogleEarthEngineService:
         Returns:
             Dictionary containing green space analysis results
         """
+        if not self.initialized:
+            return self._get_mock_green_space_data(coordinates, date_range)
+        
         try:
             roi = self.create_roi_from_coordinates(coordinates)
             
@@ -403,6 +410,9 @@ class GoogleEarthEngineService:
         Returns:
             Dictionary containing sustainable building zone analysis
         """
+        if not self.initialized:
+            return self._get_mock_building_zones_data(coordinates, date_range)
+        
         try:
             roi = self.create_roi_from_coordinates(coordinates)
             
@@ -675,3 +685,134 @@ class GoogleEarthEngineService:
         except Exception as e:
             logger.error(f"Failed to check export status: {str(e)}")
             return {"task_id": task_id, "state": "error", "error": str(e)}
+    
+    def _get_mock_uhi_data(self, coordinates: List[List[float]], date_range: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        """Mock UHI data for testing when GEE is not available"""
+        return {
+            "surface_temperature": {
+                "mean": 28.5,
+                "min": 22.1,
+                "max": 35.8,
+                "urban_mean": 32.2,
+                "rural_mean": 26.8
+            },
+            "uhi_intensity": 5.4,
+            "vegetation_index": {
+                "mean_ndvi": 0.45,
+                "min_ndvi": 0.12,
+                "max_ndvi": 0.78
+            },
+            "built_up_index": {
+                "mean_ndbi": 0.15,
+                "min_ndbi": -0.25,
+                "max_ndbi": 0.45
+            },
+            "export_task_id": "mock_task_123",
+            "visualization_params": {
+                "lst": {"min": 20, "max": 40, "palette": ["blue", "yellow", "red"]},
+                "ndvi": {"min": 0, "max": 1, "palette": ["white", "green"]},
+                "ndbi": {"min": -0.2, "max": 0.3, "palette": ["blue", "white", "red"]}
+            },
+            "metadata": {
+                "date_range": date_range or {"start_date": "2024-01-01", "end_date": "2024-01-31"},
+                "satellite": "Landsat-9 (Mock Data)",
+                "resolution": "30m",
+                "analysis_type": "urban_heat_island",
+                "note": "Mock data - GEE not initialized"
+            }
+        }
+    
+    def _get_mock_green_space_data(self, coordinates: List[List[float]], date_range: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        """Mock green space data for testing when GEE is not available"""
+        return {
+            "vegetation_analysis": {
+                "mean_ndvi": 0.42,
+                "min_ndvi": 0.08,
+                "max_ndvi": 0.85,
+                "vegetation_percentage": 28.5
+            },
+            "land_cover_distribution": {
+                "vegetation": 28.5,
+                "built_up": 45.2,
+                "water": 8.3,
+                "bare_soil": 18.0
+            },
+            "green_space_assessment": {
+                "adequacy_level": "adequate",
+                "population_density": 4200.0,
+                "recommended_green_space": "30%",
+                "current_green_space": "28.5%"
+            },
+            "optimization_recommendations": [
+                {
+                    "type": "increase_green_cover",
+                    "priority": "medium",
+                    "description": "Current green space is below recommended 30%. Consider adding more vegetation.",
+                    "estimated_impact": "2-3°C temperature reduction",
+                    "implementation_cost": "medium"
+                }
+            ],
+            "export_task_id": "mock_green_task_123",
+            "visualization_params": {
+                "ndvi": {"min": 0, "max": 1, "palette": ["white", "green"]},
+                "land_cover": {"min": 1, "max": 4, "palette": ["green", "red", "blue", "brown"]}
+            },
+            "metadata": {
+                "date_range": date_range or {"start_date": "2024-01-01", "end_date": "2024-01-31"},
+                "satellite": "Landsat-9 (Mock Data)",
+                "resolution": "30m",
+                "analysis_type": "green_space_optimization",
+                "note": "Mock data - GEE not initialized"
+            }
+        }
+    
+    def _get_mock_building_zones_data(self, coordinates: List[List[float]], date_range: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        """Mock building zones data for testing when GEE is not available"""
+        return {
+            "terrain_analysis": {
+                "mean_elevation": 125.3,
+                "min_elevation": 98.7,
+                "max_elevation": 156.2,
+                "mean_slope": 8.5,
+                "max_slope": 22.1
+            },
+            "soil_water_analysis": {
+                "mean_soil_moisture": 0.15,
+                "min_soil_moisture": 0.05,
+                "max_soil_moisture": 0.28,
+                "mean_vegetation": 0.42
+            },
+            "air_quality_analysis": {
+                "mean_no2": 0.00008,
+                "air_quality_available": True,
+                "air_quality_rating": "good"
+            },
+            "suitability_assessment": {
+                "suitable_for_construction": 65.2,
+                "flood_risk_percentage": 12.8,
+                "erosion_risk_percentage": 8.5,
+                "overall_suitability": "good"
+            },
+            "recommendations": [
+                {
+                    "type": "site_preparation",
+                    "priority": "low",
+                    "description": "Good suitability for construction. Minor site preparation recommended.",
+                    "estimated_impact": "Improved construction outcomes",
+                    "implementation_cost": "low"
+                }
+            ],
+            "export_task_id": "mock_building_task_123",
+            "visualization_params": {
+                "suitability": {"min": 0, "max": 1, "palette": ["red", "yellow", "green"]},
+                "flood_risk": {"min": 0, "max": 1, "palette": ["blue", "red"]},
+                "erosion_risk": {"min": 0, "max": 1, "palette": ["brown", "red"]}
+            },
+            "metadata": {
+                "date_range": date_range or {"start_date": "2024-01-01", "end_date": "2024-01-31"},
+                "satellites": ["Landsat-9", "Sentinel-5P", "SRTM (Mock Data)"],
+                "resolution": "30m",
+                "analysis_type": "sustainable_building_zones",
+                "note": "Mock data - GEE not initialized"
+            }
+        }
